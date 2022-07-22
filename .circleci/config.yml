@@ -22,7 +22,7 @@ jobs:
           command: |
             cd lambda/processJob && npm install
       - run:
-          name: 'Install Process Job lambda packages'
+          name: 'Install Process Job lambda package'
           command: |
             cd lambda/processJob && npm install
       - run:
