@@ -1,0 +1,58 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@2.0.6
+executors:
+  default:
+    docker:
+      - image: "cimg/node:14.18.2"
+    environment:
+      AWS_REGION: "us-east-1"
+jobs:
+  build:
+    executor: "default"
+    steps:
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY
+          aws-secret-access-key: AWS_ACCESS_SECRET
+          aws-region: AWS_REGION_NAME
+      - checkout
+      - run:
+          name: 'Install Authorizer lambda packages'
+          command: |
+            cd lambda/processJob && npm install
+      - run:
+          name: 'Install Process Job lambda packages'
+          command: |
+            cd lambda/processJob && npm install
+      - run:
+          name: "build"
+          command: |
+            npm install
+            npm run build
+      - run:
+          name: "cdk_diff"
+          command: |
+            if [ -n "$CIRCLE_PULL_REQUEST" ]; then
+              export ENV=stg
+              if [ "${CIRCLE_BRANCH}" == "develop" ]; then
+                export ENV=prd
+              fi 
+              pr_number=${CIRCLE_PULL_REQUEST##*/}
+              block='```'
+              diff=$(echo -e "cdk diff (env=${ENV})\n${block}\n$(npm run --silent ci_diff)\n${block}")
+              data=$(jq -n --arg body "$diff" '{ body: $body }') # escape
+              curl -X POST -H 'Content-Type:application/json' \
+                -H 'Accept: application/vnd.github.v3+json' \
+                -H "Authorization: token ${GITHUB_TOKEN}" \
+                -d "$data" \
+                "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/issues/${pr_number}/comments"
+            fi
+      - run:
+          name: "cdk_deploy"
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "main" ]; then
+              ENV=prd npm run ci_deploy
+            elif [ "${CIRCLE_BRANCH}" == "develop" ]; then
+              ENV=stg npm run ci_deploy
+            fi
