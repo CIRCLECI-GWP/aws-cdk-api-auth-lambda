@@ -1,16 +1,12 @@
-import {
-  Stack,
-  StackProps,
-  aws_s3 as s3,
-  aws_dynamodb as dynamodb,
-  aws_lambda as lambda,
-  aws_apigateway as apigateway,
-  Duration
-} from 'aws-cdk-lib';
+import * as cdk from 'aws-cdk-lib';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 
-export class AwsCdkApiAuthLambdaCircleCiStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+export class AwsCdkApiAuthLambdaCircleCiStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // we will add all the constructs here
@@ -28,9 +24,9 @@ export class AwsCdkApiAuthLambdaCircleCiStack extends Stack {
       this,
       "CircleCiGwpProcessJobLambda",
       {
-        runtime: lambda.Runtime.NODEJS_14_X,
+        runtime: lambda.Runtime.NODEJS_20_X,
         handler: "index.handler",
-        timeout: Duration.seconds(30),
+        timeout: cdk.Duration.seconds(30),
         code: lambda.Code.fromAsset("lambda/processJob/"),
         environment: {
           TABLE_NAME: circleCiGwpTable.tableName,
@@ -48,7 +44,7 @@ export class AwsCdkApiAuthLambdaCircleCiStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_14_X,
         handler: "index.handler",
-        timeout: Duration.seconds(30),
+        timeout: cdk.Duration.seconds(30),
         code: lambda.Code.fromAsset("lambda/authorizer/"),
       }
     );
